@@ -1,0 +1,6 @@
+Deposit: 12000.0
+Checking balance: 42000.0
+
+Transfer: 2000.0
+to Savings balance: 42000.0
+

@@ -1,15 +1,15 @@
-import java.io.IOException;
+import java.io.*;
 import java.text.DecimalFormat;
-import java.util.HashMap;
-import java.util.InputMismatchException;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 
 public class OptionMenu {
 	Scanner menuInput = new Scanner(System.in);
 	DecimalFormat moneyFormat = new DecimalFormat("'$'###,##0.00");
 	HashMap<Integer, Account> data = new HashMap<Integer, Account>();
+
+	BufferedWriter writer;
+
+	BufferedReader reader;
 
 	public void getLogin() throws IOException {
 		boolean end = false;
@@ -47,7 +47,10 @@ public class OptionMenu {
 				System.out.println("\nSelect the account you want to access: ");
 				System.out.println(" Type 1 - Checkings Account");
 				System.out.println(" Type 2 - Savings Account");
-				System.out.println(" Type 3 - Exit");
+				System.out.println(" Type 3 - Show All Accounts");
+				System.out.println(" Type 4 - Save Account Details");
+				System.out.println(" Type 5 - Return To Main Menu");
+				System.out.println(" Type 6 - Exit");
 				System.out.print("\nChoice: ");
 
 				int selection = menuInput.nextInt();
@@ -59,7 +62,17 @@ public class OptionMenu {
 				case 2:
 					getSaving(acc);
 					break;
-				case 3:
+					case 3:
+						System.out.println("\nCheckings Account Balance: " + moneyFormat.format(acc.getCheckingBalance()));
+						System.out.println("\nSavings Account Balance: " + moneyFormat.format(acc.getSavingBalance()));
+						break;
+					case 4:
+						writeToFile();
+						break;
+					case 5:
+						mainMenu();
+						break;
+				case 6:
 					end = true;
 					break;
 				default:
@@ -68,6 +81,8 @@ public class OptionMenu {
 			} catch (InputMismatchException e) {
 				System.out.println("\nInvalid Choice.");
 				menuInput.next();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
 			}
 		}
 	}
@@ -182,13 +197,15 @@ public class OptionMenu {
 	}
 
 	public void mainMenu() throws IOException {
-		data.put(952141, new Account(952141, 191904, 1000, 5000));
-		data.put(123, new Account(123, 123, 20000, 50000));
+//		data.put(952141, new Account(952141, 191904, 10000, 50000));
+//		data.put(123, new Account(123, 123, 20000, 50000));
+		readFromFile();
 		boolean end = false;
 		while (!end) {
 			try {
 				System.out.println("\n Type 1 - Login");
 				System.out.println(" Type 2 - Create Account");
+				System.out.println(" Type 3 - Logout");
 				System.out.print("\nChoice: ");
 				int choice = menuInput.nextInt();
 				switch (choice) {
@@ -200,6 +217,9 @@ public class OptionMenu {
 					createAccount();
 					end = true;
 					break;
+					case 3:
+						end = true;
+						break;
 				default:
 					System.out.println("\nInvalid Choice.");
 				}
@@ -212,4 +232,53 @@ public class OptionMenu {
 		menuInput.close();
 		System.exit(0);
 	}
+
+	public void writeToFile() throws IOException {
+//			String str = data.keySet().toString();
+			writer = new BufferedWriter(new FileWriter("accountLog.txt"));
+
+			Iterator it = data.entrySet().iterator();
+			while(it.hasNext()) {
+				Map.Entry pair = (Map.Entry) it.next();
+				Account acc = (Account) pair.getValue();
+
+				writer.write(String.valueOf(acc.getCustomerNumber()));
+				writer.write(String.valueOf("," + acc.getPinNumber()));
+				writer.write(String.valueOf("," + acc.getCheckingBalance()));
+				writer.write(String.valueOf("," + acc.getSavingBalance()));
+				writer.write(String.valueOf("\n"));
+			}
+			//writer.write("\nFiles successfully written!");
+		System.out.println("Information logged to file!");
+			writer.close();
+		}
+
+		public void readFromFile() throws IOException{
+			reader = new BufferedReader(new FileReader("/Users/andrew/Projects/ATM-Machine-Java/accountLog.txt"));
+			//ArrayList<String> record = new ArrayList<>();
+			String line;
+			while((line = reader.readLine()) != null){
+				//System.out.println(line);
+				String[] record = line.split(",");
+				int customerNum = Integer.parseInt(record[0]);
+				int pinNum = Integer.parseInt(record[1]);
+				Double checkBalance = Double.parseDouble(record[2]);
+				Double savingsBalance = Double.parseDouble(record[3]);
+				Account acc = new Account(customerNum, pinNum, checkBalance, savingsBalance);
+				data.put(customerNum, acc);
+				}
+			reader.close();
+			System.out.println("Data successfully read from file");
+		}
+
+		public static void writeTransaction(Account acc, String transactionType, String accType, double amount, double balance) throws  IOException{
+			String accID = "Account#" +  acc.getCustomerNumber() + "TransactionHistory.txt";
+			BufferedWriter writer = new BufferedWriter(new FileWriter(accID, true));
+
+			writer.write(transactionType + ": " + amount);
+			writer.write("\n" + accType + " balance: " + balance + "\n\n");
+
+			writer.close();
+			System.out.println("Transaction recorded");
+		}
 }
